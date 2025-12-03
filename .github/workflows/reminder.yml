@@ -1,0 +1,32 @@
+name: Bin Collection Reminder
+
+on:
+  schedule:
+    # Runs at 18:00 UTC (6 PM) every day
+    # You can change '18' to another hour (0-23)
+    - cron: '0 18 * * *'
+  
+  # Allows you to run it manually from the Actions tab for testing
+  workflow_dispatch:
+
+jobs:
+  check-and-email:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Run Bin Checker
+        env:
+          EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+        run: node check-bins.js
