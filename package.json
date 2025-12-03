@@ -1,0 +1,12 @@
+{
+  "name": "bin-reminder",
+  "version": "1.0.0",
+  "description": "Bin collection reminder",
+  "main": "check-bins.js",
+  "dependencies": {
+    "nodemailer": "^6.9.0"
+  },
+  "scripts": {
+    "start": "node check-bins.js"
+  }
+}
