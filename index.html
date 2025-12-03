@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stockport Bin Collection Checker</title>
+    <style>
+        :root {
+            --bg-color: #f4f4f9;
+            --card-bg: #ffffff;
+            --text-main: #333333;
+            --text-sub: #666666;
+            --bin-black: #2c2c2c;
+            --bin-blue: #0077be;
+            --bin-brown: #8b4513;
+            --bin-green: #4caf50;
+            --warning-bg: #ffe6e6;
+            --warning-text: #cc0000;
+            --warning-border: #ffcccc;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            color: var(--text-sub);
+        }
+
+        .main-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            padding: 40px;
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+        }
+
+        .date-display {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 10px 0;
+        }
+
+        .day-label {
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.9rem;
+            color: var(--text-sub);
+            font-weight: 600;
+        }
+
+        .bins-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 30px;
+            min-height: 100px; 
+        }
+
+        .bin {
+            width: 60px;
+            height: 80px;
+            border-radius: 6px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Bin Lid */
+        .bin::before {
+            content: '';
+            width: 70px;
+            height: 10px;
+            border-radius: 4px;
+            position: absolute;
+            top: -10px;
+            left: -5px;
+        }
+
+        /* Bin Colors */
+        .bin.black { background-color: var(--bin-black); }
+        .bin.black::before { background-color: var(--bin-black); }
+        
+        .bin.blue { background-color: var(--bin-blue); }
+        .bin.blue::before { background-color: var(--bin-blue); }
+
+        .bin.brown { background-color: var(--bin-brown); }
+        .bin.brown::before { background-color: var(--bin-brown); }
+
+        .bin.green { background-color: var(--bin-green); }
+        .bin.green::before { background-color: var(--bin-green); }
+
+        .bin-label {
+            margin-top: 90px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+
+        .upcoming-list {
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .upcoming-item {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .upcoming-date {
+            font-weight: 500;
+        }
+
+        .mini-bins {
+            display: flex;
+            gap: 5px;
+        }
+
+        .mini-bin {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+        }
+        
+        .mini-bin.black { background-color: var(--bin-black); }
+        .mini-bin.blue { background-color: var(--bin-blue); }
+        .mini-bin.brown { background-color: var(--bin-brown); }
+        .mini-bin.green { background-color: var(--bin-green); }
+
+        /* Warning Box Styles */
+        .warning-box {
+            display: none; 
+            background-color: var(--warning-bg);
+            color: var(--warning-text);
+            border: 1px solid var(--warning-border);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            text-align: center;
+            font-size: 0.9rem;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .warning-box strong {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 1rem;
+        }
+
+        .footer {
+            margin-top: 40px;
+            font-size: 0.8rem;
+            color: var(--text-sub);
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Next Bin Collection</h1>
+
+    <div id="main-card" class="main-card">
+        <div class="day-label" id="next-day-name">Tuesday</div>
+        <div class="date-display" id="next-date">Loading...</div>
+        
+        <div class="bins-container" id="next-bins">
+            </div>
+    </div>
+
+    <div id="warning-message" class="warning-box">
+        <strong>⚠️ Schedule Expired</strong>
+        There is no data for upcoming collections. Please update the <code>schedule</code> array in index.html with the new PDF data.
+    </div>
+
+    <div class="upcoming-list" id="upcoming-list">
+        </div>
+
+    <div class="footer">
+        Data based on Stockport Council Schedule (32A_32)<br>
+        2025 - 2026
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        try {
+            // Data transcribed from PDF 32A_32.pdf
+            const schedule = [
+                // April 2025
+                { date: "2025-04-01", bins: ["blue", "green"] },
+                { date: "2025-04-08", bins: ["black", "green"] },
+                { date: "2025-04-15", bins: ["blue", "brown", "green"] },
+                { date: "2025-04-22", bins: ["black", "green"] },
+                { date: "2025-04-29", bins: ["blue", "green"] },
+                // May 2025
+                { date: "2025-05-06", bins: ["black", "green"] },
+                { date: "2025-05-13", bins: ["blue", "brown", "green"] },
+                { date: "2025-05-20", bins: ["black", "green"] },
+                { date: "2025-05-27", bins: ["green"] },
+                // June 2025
+                { date: "2025-06-03", bins: ["black", "green"] },
+                { date: "2025-06-10", bins: ["blue", "brown", "green"] },
+                { date: "2025-06-17", bins: ["black", "green"] },
+                { date: "2025-06-24", bins: ["green"] },
+                // July 2025
+                { date: "2025-07-01", bins: ["black", "green"] },
+                { date: "2025-07-08", bins: ["blue", "brown", "green"] },
+                { date: "2025-07-15", bins: ["black", "green"] },
+                { date: "2025-07-22", bins: ["green"] },
+                { date: "2025-07-29", bins: ["black", "green"] },
+                // August 2025
+                { date: "2025-08-05", bins: ["blue", "brown", "green"] },
+                { date: "2025-08-12", bins: ["black", "green"] },
+                { date: "2025-08-19", bins: ["green"] },
+                { date: "2025-08-26", bins: ["black", "green"] },
+                // September 2025
+                { date: "2025-09-02", bins: ["blue", "brown", "green"] },
+                { date: "2025-09-09", bins: ["black", "green"] },
+                { date: "2025-09-16", bins: ["green"] },
+                { date: "2025-09-23", bins: ["black", "green"] },
+                { date: "2025-09-30", bins: ["blue", "brown", "green"] },
+                // October 2025
+                { date: "2025-10-07", bins: ["black", "green"] },
+                { date: "2025-10-14", bins: ["green"] },
+                { date: "2025-10-21", bins: ["black", "green"] },
+                { date: "2025-10-28", bins: ["blue", "brown", "green"] },
+                // November 2025
+                { date: "2025-11-04", bins: ["black", "green"] },
+                { date: "2025-11-11", bins: ["green"] },
+                { date: "2025-11-18", bins: ["black", "green"] },
+                { date: "2025-11-25", bins: ["blue", "brown", "green"] },
+                // December 2025
+                { date: "2025-12-02", bins: ["black", "green"] },
+                { date: "2025-12-09", bins: ["green"] },
+                { date: "2025-12-16", bins: ["black", "green"] },
+                { date: "2025-12-23", bins: ["blue", "brown", "green"] },
+                { date: "2025-12-30", bins: ["black"] },
+                // January 2026
+                { date: "2026-01-06", bins: ["green"] },
+                { date: "2026-01-13", bins: ["black", "green"] },
+                { date: "2026-01-20", bins: ["blue", "brown", "green"] },
+                { date: "2026-01-27", bins: ["black", "green"] },
+                // February 2026
+                { date: "2026-02-03", bins: ["green"] },
+                { date: "2026-02-10", bins: ["black", "green"] },
+                { date: "2026-02-17", bins: ["blue", "brown", "green"] },
+                { date: "2026-02-24", bins: ["black", "green"] },
+                // March 2026
+                { date: "2026-03-03", bins: ["green"] },
+                { date: "2026-03-10", bins: ["black", "green"] },
+                { date: "2026-03-17", bins: ["blue", "brown", "green"] },
+                { date: "2026-03-24", bins: ["black", "green"] },
+                { date: "2026-03-31", bins: ["green"] },
+                // April 2026
+                { date: "2026-04-07", bins: ["black", "green"] },
+                { date: "2026-04-14", bins: ["blue", "brown", "green"] },
+                { date: "2026-04-21", bins: ["black", "green"] },
+                { date: "2026-04-28", bins: ["green"] },
+                // May 2026
+                { date: "2026-05-05", bins: ["black", "green"] },
+                { date: "2026-05-12", bins: ["blue", "brown", "green"] },
+                { date: "2026-05-19", bins: ["black", "green"] },
+                { date: "2026-05-26", bins: ["green"] },
+                // June 2026
+                { date: "2026-06-02", bins: ["black", "green"] },
+                { date: "2026-06-09", bins: ["blue", "brown", "green"] },
+                { date: "2026-06-16", bins: ["black", "green"] },
+                { date: "2026-06-23", bins: ["green"] },
+                { date: "2026-06-30", bins: ["black", "green"] },
+                // July 2026
+                { date: "2026-07-07", bins: ["blue", "brown", "green"] },
+                { date: "2026-07-14", bins: ["black", "green"] },
+                { date: "2026-07-21", bins: ["green"] },
+                { date: "2026-07-28", bins: ["black", "green"] },
+                // August 2026
+                { date: "2026-08-04", bins: ["blue", "brown", "green"] },
+                { date: "2026-08-11", bins: ["black", "green"] },
+                { date: "2026-08-18", bins: ["green"] },
+                { date: "2026-08-25", bins: ["black", "green"] },
+                // September 2026
+                { date: "2026-09-01", bins: ["blue", "brown", "green"] },
+                { date: "2026-09-08", bins: ["black", "green"] }
+            ];
+
+            function getOrdinal(d) {
+                if (d > 3 && d < 21) return 'th';
+                switch (d % 10) {
+                    case 1:  return "st";
+                    case 2:  return "nd";
+                    case 3:  return "rd";
+                    default: return "th";
+                }
+            }
+
+            function formatDate(dateStr) {
+                const date = new Date(dateStr);
+                const day = date.getDate();
+                const month = date.toLocaleDateString('en-GB', { month: 'long' });
+                return `${day}${getOrdinal(day)} ${month}`;
+            }
+
+            function render() {
+                // Get today's date at midnight
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                // Filter for future/today dates
+                const upcoming = schedule.filter(item => {
+                    const itemDate = new Date(item.date);
+                    return itemDate >= today;
+                }).sort((a, b) => new Date(a.date) - new Date(b.date));
+
+                const mainCardDate = document.getElementById('next-date');
+                const mainCardBins = document.getElementById('next-bins');
+                const mainDayLabel = document.getElementById('next-day-name');
+                const upcomingList = document.getElementById('upcoming-list');
+                const warningBox = document.getElementById('warning-message');
+
+                // --- WARNING LOGIC ---
+                if (upcoming.length === 0) {
+                    mainCardDate.textContent = "No Data";
+                    mainCardDate.style.fontSize = "1.5rem";
+                    mainDayLabel.textContent = "Status";
+                    mainCardBins.innerHTML = "";
+                    warningBox.style.display = "block";
+                    upcomingList.style.display = "none";
+                    return;
+                }
+
+                // If data exists
+                warningBox.style.display = "none";
+                upcomingList.style.display = "block";
+                mainCardDate.style.fontSize = "2.5rem";
+                mainDayLabel.textContent = "Tuesday";
+
+                // 1. Render Main Card
+                const next = upcoming[0];
+                mainCardDate.textContent = formatDate(next.date);
+                
+                mainCardBins.innerHTML = next.bins.map(color => `
+                    <div class="bin ${color}">
+                        <div class="bin-label">${color}</div>
+                    </div>
+                `).join('');
+
+                // 2. Render Upcoming List
+                const listItems = upcoming.slice(1, 5);
+                upcomingList.innerHTML = listItems.map(item => `
+                    <div class="upcoming-item">
+                        <div class="upcoming-date">${formatDate(item.date)}</div>
+                        <div class="mini-bins">
+                            ${item.bins.map(color => `<div class="mini-bin ${color}"></div>`).join('')}
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            render();
+
+        } catch (error) {
+            console.error(error);
+            alert("An error occurred loading the schedule: " + error.message);
+        }
+    });
+    </script>
+</body>
+</html>
